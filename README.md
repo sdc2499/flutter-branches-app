@@ -1,16 +1,27 @@
-# flutter_application_1
+# 📍 Branches Management System
 
-A new Flutter project.
+A mobile application for displaying and sorting branches based on the user's location. This app retrieves branch data via an API and allows users to view detailed information about nearby branches, making it easy to find the closest one.
 
-## Getting Started
+### 📝 **Features**:
+- **Branch Listing**: The app displays a list of branches with their names and addresses.
+- **Location-Based Sorting**: Branches are sorted based on the user's current location using the Geolocator package.
+- **Real-Time Updates**: The list updates dynamically, showing the nearest branches based on the user's position.
+- **Branch Details**: Each branch has its own detailed page with additional information.
 
-This project is a starting point for a Flutter application.
+## 🎓 **My Self-Learning Journey**  
+This project was built entirely through self-learning. I started from scratch, diving into Flutter development, working with APIs, handling location-based sorting, and integrating real-time updates using the Geolocator package.
 
-A few resources to get you started if this is your first Flutter project:
+This experience not only strengthened my mobile development skills but also improved my ability to work with external data, and I continue to learn and grow with each new feature I implement.
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+---
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## 🚀 **Technologies Used**:  
+- **Frontend**: Flutter, Dart  
+- **Location Services**: Geolocator  
+- **API Integration**: HTTP requests for fetching branch data  
+- **Real-Time Updates**: Flutter Widgets and FutureBuilder for dynamic data updates
+
+## 💡 **Future Improvements**:
+- **Integration with additional APIs**: Adding integration with other services (e.g., postal services).
+- **Enhanced Map Features**: Adding the option to display nearby points of interest.
+
