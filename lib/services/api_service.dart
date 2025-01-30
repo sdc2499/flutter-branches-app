@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'package:flutter/services.dart';
-import 'package:geolocator/geolocator.dart';
 import '../models/branch.dart';
 
 class ApiService {

@@ -11,7 +11,8 @@ class BranchesListScreen extends StatefulWidget {
 
 class _BranchesListScreenState extends State<BranchesListScreen> {
   late Future<List<Branch>> branches;
-  List<Branch> filteredBranches = [];
+  List<Branch> branchList = []; // רשימת כל הסניפים המקורית
+  List<Branch> filteredBranches = []; // רשימה לסינון
   TextEditingController searchController = TextEditingController();
   Color textColor = Colors.black;
   Color errorColor = Colors.red;
@@ -54,7 +55,8 @@ class _BranchesListScreenState extends State<BranchesListScreen> {
       List<Branch> sortedBranches = await getSortedBranches();
 
       setState(() {
-        branches = Future.value(sortedBranches);
+        branchList = sortedBranches;
+        filteredBranches = sortedBranches;
         isSorting = false; // סיום המיון
       });
     }
@@ -84,7 +86,8 @@ class _BranchesListScreenState extends State<BranchesListScreen> {
     branches = ApiService.fetchBranches();
     branches.then((list) {
       setState(() {
-        filteredBranches = list;
+        branchList = list;
+        filteredBranches = list; // תחילה אין סינון, כל הסניפים מוצגים
       });
     });
 
@@ -103,8 +106,8 @@ class _BranchesListScreenState extends State<BranchesListScreen> {
         userLocation = await _determinePosition();
       }
 
-      List<Branch> branchList = await branches;
-      branchList.sort((a, b) {
+      List<Branch> sortedList = List.from(branchList); // שכפול הרשימה
+      sortedList.sort((a, b) {
         double distanceA = Geolocator.distanceBetween(userLocation!.latitude,
             userLocation!.longitude, a.latitude, a.longitude);
         double distanceB = Geolocator.distanceBetween(userLocation!.latitude,
@@ -112,18 +115,17 @@ class _BranchesListScreenState extends State<BranchesListScreen> {
         return distanceA.compareTo(distanceB);
       });
 
-      return branchList;
+      return sortedList;
     } catch (e) {
       print("⚠️ לא ניתן לקבל מיקום: ${e}");
-      return await branches;
+      return branchList;
     }
   }
 
-  void filterBranches() async {
+  void filterBranches() {
     String query = searchController.text.toLowerCase();
-    List<Branch> allBranches = await branches;
     setState(() {
-      filteredBranches = allBranches
+      filteredBranches = branchList
           .where((branch) =>
               branch.name.toLowerCase().contains(query) ||
               branch.address.toLowerCase().contains(query))
@@ -160,59 +162,35 @@ class _BranchesListScreenState extends State<BranchesListScreen> {
             child: isSorting
                 ? Center(
                     child: CircularProgressIndicator()) // מציג טעינה בזמן המיון
-                : FutureBuilder(
-                    future: branches,
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return Center(
-                          child: CircularProgressIndicator(),
-                        );
-                      } else if (snapshot.hasError) {
-                        return Center(
-                          child: Text(
-                            'שגיאה בטעינת הסניפים: ${snapshot.error}',
-                            style: TextStyle(color: errorColor),
-                          ),
-                        );
-                      } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                        return Center(
-                          child: Text(
-                            'אין סניפים זמינים',
-                            style: TextStyle(color: errorColor),
-                          ),
-                        );
-                      } else {
-                        final branches = snapshot.data!;
-                        return ListView.builder(
-                          itemCount: branches.length,
-                          itemBuilder: (context, index) {
-                            final branch = branches[index];
-                            return ListTile(
-                              title: Text(
-                                branch.name,
-                                textDirection: TextDirection.rtl,
-                                style: TextStyle(color: textColor),
-                              ),
-                              subtitle: Text(
-                                branch.address,
-                                textDirection: TextDirection.rtl,
-                                style: TextStyle(color: textColor),
-                              ),
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        BranchDetailesScreen(branch: branch),
-                                  ),
-                                );
-                              },
-                            );
-                          },
-                        );
-                      }
-                    },
-                  ),
+                : filteredBranches.isEmpty
+                    ? Center(child: Text('אין תוצאות לחיפוש'))
+                    : ListView.builder(
+                        itemCount: filteredBranches.length,
+                        itemBuilder: (context, index) {
+                          final branch = filteredBranches[index];
+                          return ListTile(
+                            title: Text(
+                              branch.name,
+                              textDirection: TextDirection.rtl,
+                              style: TextStyle(color: textColor),
+                            ),
+                            subtitle: Text(
+                              branch.address,
+                              textDirection: TextDirection.rtl,
+                              style: TextStyle(color: textColor),
+                            ),
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      BranchDetailesScreen(branch: branch),
+                                ),
+                              );
+                            },
+                          );
+                        },
+                      ),
           ),
         ]));
   }
