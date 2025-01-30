@@ -11,14 +11,14 @@ class BranchesListScreen extends StatefulWidget {
 
 class _BranchesListScreenState extends State<BranchesListScreen> {
   late Future<List<Branch>> branches;
-  List<Branch> branchList = []; // רשימת כל הסניפים המקורית
-  List<Branch> filteredBranches = []; // רשימה לסינון
+  List<Branch> branchList = [];
+  List<Branch> filteredBranches = [];
   TextEditingController searchController = TextEditingController();
   Color textColor = Colors.black;
   Color errorColor = Colors.red;
   bool userAgreed = false;
   Position? userLocation;
-  bool isSorting = false; // מציין אם המיון מתבצע
+  bool isSorting = false;
 
   Future<void> showLocationDialog(BuildContext context) async {
     bool? agreement = await showDialog(
@@ -41,7 +41,7 @@ class _BranchesListScreenState extends State<BranchesListScreen> {
 
     if (agreement == true) {
       setState(() {
-        isSorting = true; // מציין שהמיון התחיל
+        isSorting = true;
       });
 
       Position position = await _determinePosition();
@@ -51,13 +51,12 @@ class _BranchesListScreenState extends State<BranchesListScreen> {
         userLocation = position;
       });
 
-      // קבלת רשימה ממוינת
       List<Branch> sortedBranches = await getSortedBranches();
 
       setState(() {
         branchList = sortedBranches;
         filteredBranches = sortedBranches;
-        isSorting = false; // סיום המיון
+        isSorting = false;
       });
     }
   }
@@ -87,7 +86,7 @@ class _BranchesListScreenState extends State<BranchesListScreen> {
     branches.then((list) {
       setState(() {
         branchList = list;
-        filteredBranches = list; // תחילה אין סינון, כל הסניפים מוצגים
+        filteredBranches = list;
       });
     });
 
@@ -106,7 +105,7 @@ class _BranchesListScreenState extends State<BranchesListScreen> {
         userLocation = await _determinePosition();
       }
 
-      List<Branch> sortedList = List.from(branchList); // שכפול הרשימה
+      List<Branch> sortedList = List.from(branchList);
       sortedList.sort((a, b) {
         double distanceA = Geolocator.distanceBetween(userLocation!.latitude,
             userLocation!.longitude, a.latitude, a.longitude);
@@ -136,62 +135,77 @@ class _BranchesListScreenState extends State<BranchesListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+        backgroundColor: Colors.white,
         appBar: AppBar(
           title: Text('סניפים'),
           bottom: PreferredSize(
-            preferredSize: Size.fromHeight(50.0),
-            child: Padding(
-              padding: EdgeInsets.all(8.0),
-              child: TextField(
-                controller: searchController,
-                decoration: InputDecoration(
-                  hintText: 'חפש סניף...',
-                  prefixIcon: Icon(Icons.search),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
+              preferredSize: Size.fromHeight(50.0),
+              child: Padding(
+                padding: EdgeInsets.all(8.0),
+                child: TextField(
+                  controller: searchController,
+                  textAlign: TextAlign.right,
+                  style: TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    hintText: 'מצא סניף...',
+                    hintStyle: TextStyle(color: Colors.white70),
+                    prefixIcon: Icon(Icons.search, color: Colors.white),
+                    filled: true,
+                    fillColor: Colors.black,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(30),
+                      borderSide: BorderSide.none,
+                    ),
                   ),
-                  filled: true,
-                  fillColor: Colors.white,
                 ),
-              ),
-            ),
-          ),
+              )),
         ),
         body: Column(children: [
           Expanded(
-            child: isSorting
-                ? Center(
-                    child: CircularProgressIndicator()) // מציג טעינה בזמן המיון
-                : filteredBranches.isEmpty
-                    ? Center(child: Text('אין תוצאות לחיפוש'))
-                    : ListView.builder(
-                        itemCount: filteredBranches.length,
-                        itemBuilder: (context, index) {
-                          final branch = filteredBranches[index];
-                          return ListTile(
-                            title: Text(
-                              branch.name,
-                              textDirection: TextDirection.rtl,
-                              style: TextStyle(color: textColor),
-                            ),
-                            subtitle: Text(
-                              branch.address,
-                              textDirection: TextDirection.rtl,
-                              style: TextStyle(color: textColor),
-                            ),
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      BranchDetailesScreen(branch: branch),
+              child: isSorting
+                  ? Center(child: CircularProgressIndicator())
+                  : filteredBranches.isEmpty
+                      ? Center(child: Text('אין תוצאות לחיפוש'))
+                      : ListView.builder(
+                          itemCount: filteredBranches.length,
+                          itemBuilder: (context, index) {
+                            final branch = filteredBranches[index];
+                            return Column(
+                              children: [
+                                ListTile(
+                                  leading: Icon(Icons.location_on,
+                                      color: Colors.amber),
+                                  title: Text(
+                                    branch.name,
+                                    textDirection: TextDirection.rtl,
+                                    style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16),
+                                  ),
+                                  subtitle: Text(
+                                    branch.address,
+                                    textDirection: TextDirection.rtl,
+                                    style: TextStyle(
+                                        fontSize: 14, color: Colors.grey[700]),
+                                  ),
+                                  trailing: Icon(Icons.chevron_right,
+                                      color: Colors.black),
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            BranchDetailesScreen(
+                                                branch: branch),
+                                      ),
+                                    );
+                                  },
                                 ),
-                              );
-                            },
-                          );
-                        },
-                      ),
-          ),
+                                Divider(),
+                              ],
+                            );
+                          },
+                        )),
         ]));
   }
 }
