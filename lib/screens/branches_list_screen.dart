@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import '../models/branch.dart';
@@ -12,12 +11,13 @@ class BranchesListScreen extends StatefulWidget {
 
 class _BranchesListScreenState extends State<BranchesListScreen> {
   late Future<List<Branch>> branches;
-  List<Branch> filteredBranches = []; 
-  TextEditingController searchController = TextEditingController(); 
+  List<Branch> filteredBranches = [];
+  TextEditingController searchController = TextEditingController();
   Color textColor = Colors.black;
   Color errorColor = Colors.red;
   bool userAgreed = false;
   Position? userLocation;
+  bool isSorting = false; // מציין אם המיון מתבצע
 
   Future<void> showLocationDialog(BuildContext context) async {
     bool? agreement = await showDialog(
@@ -39,11 +39,23 @@ class _BranchesListScreenState extends State<BranchesListScreen> {
     );
 
     if (agreement == true) {
+      setState(() {
+        isSorting = true; // מציין שהמיון התחיל
+      });
+
       Position position = await _determinePosition();
+
       setState(() {
         userAgreed = true;
         userLocation = position;
-        branches = getSortedBranches();
+      });
+
+      // קבלת רשימה ממוינת
+      List<Branch> sortedBranches = await getSortedBranches();
+
+      setState(() {
+        branches = Future.value(sortedBranches);
+        isSorting = false; // סיום המיון
       });
     }
   }
@@ -72,7 +84,7 @@ class _BranchesListScreenState extends State<BranchesListScreen> {
     branches = ApiService.fetchBranches();
     branches.then((list) {
       setState(() {
-        filteredBranches = list; 
+        filteredBranches = list;
       });
     });
 
@@ -122,85 +134,86 @@ class _BranchesListScreenState extends State<BranchesListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('סניפים'),
-        bottom: PreferredSize(
-          preferredSize: Size.fromHeight(50.0),
-          child: Padding(
-            padding: EdgeInsets.all(8.0),
-            child: TextField(
-              controller: searchController,
-              decoration: InputDecoration(
-                hintText: 'חפש סניף...',
-                prefixIcon: Icon(Icons.search),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
+        appBar: AppBar(
+          title: Text('סניפים'),
+          bottom: PreferredSize(
+            preferredSize: Size.fromHeight(50.0),
+            child: Padding(
+              padding: EdgeInsets.all(8.0),
+              child: TextField(
+                controller: searchController,
+                decoration: InputDecoration(
+                  hintText: 'חפש סניף...',
+                  prefixIcon: Icon(Icons.search),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  filled: true,
+                  fillColor: Colors.white,
                 ),
-                filled: true,
-                fillColor: Colors.white,
               ),
             ),
           ),
         ),
-      ),
-      body: Column(
-        children: [
+        body: Column(children: [
           Expanded(
-            child: FutureBuilder(
-              future: branches,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Center(
-                    child: CircularProgressIndicator(),
-                  );
-                } else if (snapshot.hasError) {
-                  return Center(
-                    child: Text(
-                      'שגיאה בטעינת הסניפים: ${snapshot.error}',
-                      style: TextStyle(color: errorColor),
-                    ),
-                  );
-                } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return Center(
-                    child: Text(
-                      'אין סניפים זמינים',
-                      style: TextStyle(color: errorColor),
-                    ),
-                  );
-                } else {
-                  return ListView.builder(
-                    itemCount: filteredBranches.length,
-                    itemBuilder: (context, index) {
-                      final branch = filteredBranches[index];
-                      return ListTile(
-                        title: Text(
-                          branch.name,
-                          textDirection: TextDirection.rtl,
-                          style: TextStyle(color: textColor),
-                        ),
-                        subtitle: Text(
-                          branch.address,
-                          textDirection: TextDirection.rtl,
-                          style: TextStyle(color: textColor),
-                        ),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  BranchDetailesScreen(branch: branch),
-                            ),
-                          );
-                        },
-                      );
+            child: isSorting
+                ? Center(
+                    child: CircularProgressIndicator()) // מציג טעינה בזמן המיון
+                : FutureBuilder(
+                    future: branches,
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return Center(
+                          child: CircularProgressIndicator(),
+                        );
+                      } else if (snapshot.hasError) {
+                        return Center(
+                          child: Text(
+                            'שגיאה בטעינת הסניפים: ${snapshot.error}',
+                            style: TextStyle(color: errorColor),
+                          ),
+                        );
+                      } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                        return Center(
+                          child: Text(
+                            'אין סניפים זמינים',
+                            style: TextStyle(color: errorColor),
+                          ),
+                        );
+                      } else {
+                        final branches = snapshot.data!;
+                        return ListView.builder(
+                          itemCount: branches.length,
+                          itemBuilder: (context, index) {
+                            final branch = branches[index];
+                            return ListTile(
+                              title: Text(
+                                branch.name,
+                                textDirection: TextDirection.rtl,
+                                style: TextStyle(color: textColor),
+                              ),
+                              subtitle: Text(
+                                branch.address,
+                                textDirection: TextDirection.rtl,
+                                style: TextStyle(color: textColor),
+                              ),
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        BranchDetailesScreen(branch: branch),
+                                  ),
+                                );
+                              },
+                            );
+                          },
+                        );
+                      }
                     },
-                  );
-                }
-              },
-            ),
+                  ),
           ),
-        ],
-      ),
-    );
+        ]));
   }
 }
